@@ -21,26 +21,35 @@ export const CatContainer = () => {
     }, []);
 
     const handleSelect = (id) => {
-        setBreedCats([]);
-        setShowedCats([]);
+        resetSettings();
         getMoreCats(id);
     };
 
+    const resetSettings = () => {
+        setShowLoadMore(true);
+        setBreedCats([]);
+        setShowedCats([]);
+    }
+
     const getMoreCats = (id) => {
+        if (id === 'reset') return;
         axios
         .get(`https://api.thecatapi.com/v1/images/search?page=${currentPage}&limit=10&breed_id=${id}`)
         .then((data) => {
             const catsToShow = [];
             data.data.forEach((cat) => {
                 if(!showedCats.includes(cat.id)) {
-                    showedCats.push(cat.id);
+                    setShowedCats(showedCats => [...showedCats, cat.id]);
                     catsToShow.push(cat);
                 }
             });
 
-            if (catsToShow.length === 0) setShowLoadMore(false);
-
+            if (catsToShow.length === 0) {
+                setShowLoadMore(false)
+                return;
+            };
             setCurrentBreed(id);
+
             if (breedCats.length > 0) {
                 setBreedCats(breedCats => [...breedCats, ...catsToShow]);
             }
@@ -48,8 +57,6 @@ export const CatContainer = () => {
                 setBreedCats(catsToShow);
             }
             setCurrentPage(currentPage + 1);
-
-
         })
         .catch((error) => alert(error));
     }
@@ -57,9 +64,13 @@ export const CatContainer = () => {
     return (
         <>
             <CatSelector handleSelect={handleSelect} id={router.query.breed}/>
-            <CatGrid cats={breedCats}/>
+            {
+                breedCats.length > 0
+                ? <CatGrid cats={breedCats}/>
+                : <p className="mb-3">No cats available</p>
+            }
             { showLoadMore
-                ? (<Button variant="success" onClick={() => {getMoreCats(currentBreed)}}>Load More</Button>)
+                ? (<Button variant="success" disabled={breedCats.length === 0} onClick={() => {getMoreCats(currentBreed)}}>Load More</Button>)
                 : null
             }
         </>
